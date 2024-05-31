@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:music_player/screens/container.dart';
-import 'package:music_player/screens/music_favourite.dart';
-import 'package:music_player/screens/music_player.dart';
-import 'bloc/music_bloc.dart';
-import 'screens/music_list_screen.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:on_audio_query/on_audio_query.dart';
+import 'bloc/device_song/device_songs_bloc.dart';
+import 'bloc/favourite/favourite_songs_bloc.dart';
+import 'bloc/music/play_song_bloc.dart';
+import 'screens/home_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,21 +16,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => MusicBloc()..add(LoadMusicFiles()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => DeviceSongsBloc(OnAudioQuery())),
+        BlocProvider(create: (_) => FavouriteSongsBloc()),
+        BlocProvider(create: (_) => PlaySongBloc(AudioPlayer())),
+      ],
       child: MaterialApp(
-        title: 'Music Player',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          primarySwatch: Colors.blue,
+          scaffoldBackgroundColor: Colors.black.withOpacity(0.8),
+          appBarTheme: const AppBarTheme(backgroundColor: Colors.transparent),
         ),
-        home: ContainerScreen(),
-        // initialRoute:,
-        // routes: {
-        //   '/': (context) => const MusicListScreen(),
-        //   '/player': (context) => PlayerScreen(),
-        //   '/favorites': (context) => const FavoriteScreen(),
-        // },
+        home: const HomeScreen(),
       ),
     );
   }

@@ -1,68 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../bloc/music_bloc.dart';
+import 'package:on_audio_query/on_audio_query.dart';
 
-class MusicListScreen extends StatelessWidget {
-  const MusicListScreen({super.key});
+import '../bloc/device_song/device_songs_bloc.dart';
+import '../bloc/favourite/favourite_songs_bloc.dart';
+import 'music_player.dart';
+
+class AllAudiosScreen extends StatelessWidget {
+  final Function(String uri) onMusicChosen;
+
+  const AllAudiosScreen({super.key, required this.onMusicChosen});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Music List'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.favorite),
-            onPressed: () {
-              Navigator.pushNamed(context, '/favorites');
-            },
-          ),
-        ],
-      ),
-      body: BlocBuilder<MusicBloc, MusicState>(
-        builder: (context, state) {
-          if (state is MusicLoading) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (state is MusicLoaded) {
-            return ListView.builder(
-              itemCount: state.musicFiles.length,
-              itemBuilder: (context, index) {
-                final music = state.musicFiles[index];
-                return ListTile(
-                  title: Text(music.title),
-                  subtitle: Text(music.artist),
-                  trailing: IconButton(
-                    icon: Icon(
-                      state.favorites.contains(music) ? Icons.favorite : Icons.favorite_border,
-                      color: state.favorites.contains(music) ? Colors.red : null,
+    return BlocProvider(
+      create: (context) =>
+          DeviceSongsBloc(OnAudioQuery())..add(FetchDeviceSongs()),
+      child: Scaffold(
+        appBar: AppBar(
+            title: const Text(
+          "All Songs",
+          style: TextStyle(color: Colors.white),
+        ),
+          leading: IconButton(onPressed: (){
+            Navigator.pop(context);
+          },icon: const Icon(Icons.arrow_back_ios_rounded,color: Colors.white,),),
+        ),
+        body: BlocBuilder<DeviceSongsBloc, DeviceSongsState>(
+          builder: (context, state) {
+            if (state is DeviceSongsLoading) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (state is DeviceSongsLoaded) {
+              return ListView.builder(
+                itemCount: state.songs.length,
+                itemBuilder: (context, index) {
+                  final song = state.songs[index];
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.greenAccent,
+                      borderRadius: BorderRadius.circular(15)
                     ),
-                    onPressed: () {
-                      if (state.favorites.contains(music)) {
-                        context.read<MusicBloc>().add(RemoveFromFavorites(music));
-                      } else {
-                        context.read<MusicBloc>().add(AddToFavorites(music));
-                      }
-                    },
-                  ),
-                  onTap: () {
-                    context.read<MusicBloc>().add(PlayMusic(music));
-                    Navigator.pushNamed(context, '/player');
-                  },
-                );
-              },
-            );
-          } else if (state is MusicError) {
-            return Center(child: Text(state.message));
-          } else {
-            return const Center(child: Text('No music loaded'));
-          }
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          context.read<MusicBloc>().add(LoadMusicFiles());
-        },
-        child: const Icon(Icons.refresh),
+                    child: ListTile(
+                      // leading: ,
+                      title: Text(song.title),
+                      subtitle: Text(song.artist ?? "Unknown Artist"),
+                      onTap: () {
+                        onMusicChosen(song.uri!);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PlayerScreen(song: song),
+                          ),
+                        );
+                      },
+                      trailing: IconButton(
+                        icon: const Icon(Icons.favorite_border),
+                        onPressed: () {
+                          BlocProvider.of<FavouriteSongsBloc>(context)
+                              .add(AddFavouriteSong(song));
+                        },
+                      ),
+                    ),
+                  );
+                },
+              );
+            } else {
+              return const Center(child: Text("Failed to load songs"));
+            }
+          },
+        ),
       ),
     );
   }

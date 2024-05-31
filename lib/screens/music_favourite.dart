@@ -1,43 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../bloc/music_bloc.dart';
+import 'package:music_player/screens/home_screen.dart';
 
-class FavoriteScreen extends StatelessWidget {
-  const FavoriteScreen({super.key});
+import '../bloc/favourite/favourite_songs_bloc.dart';
+import 'music_player.dart';
+
+class FavouriteSongsScreen extends StatelessWidget {
+  const FavouriteSongsScreen({super.key});
+
+  get song => null;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Favorites'),
-      ),
-      body: BlocBuilder<MusicBloc, MusicState>(
-        builder: (context, state) {
-          if (state is FavoriteMusicLoaded) {
-            return ListView.builder(
-              itemCount: state.favorites.length,
-              itemBuilder: (context, index) {
-                final music = state.favorites[index];
-                return ListTile(
-                  title: Text(music.title),
-                  subtitle: Text(music.artist),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.favorite, color: Colors.red),
-                    onPressed: () {
-                      context.read<MusicBloc>().add(RemoveFromFavorites(music));
+    return BlocProvider(
+      create: (context) => FavouriteSongsBloc(),
+      child: Scaffold(
+        appBar: AppBar(title: const Text("Favourite Songs",style: TextStyle(color: Colors.white),
+        ),
+          leading: IconButton(onPressed: (){
+            Navigator.push(context, MaterialPageRoute(builder: (context)=>const HomeScreen()));
+          },icon: const Icon(Icons.arrow_back_ios_rounded,color: Colors.white,),),
+        ),
+        body: BlocBuilder<FavouriteSongsBloc, FavouriteSongsState>(
+          builder: (context, state) {
+            if (state is FavouriteSongsUpdated) {
+              return ListView.builder(
+                itemCount: state.songs.length,
+                itemBuilder: (context, index) {
+                  final song = state.songs[index];
+                  return ListTile(
+                    title: Text(song.title),
+                    subtitle: Text(song.artist ?? "Unknown Artist",style: const TextStyle(color: Colors.white),),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PlayerScreen(song: song),
+                        ),
+                      );
                     },
-                  ),
-                  onTap: () {
-                    context.read<MusicBloc>().add(PlayMusic(music));
-                    Navigator.pushNamed(context, '/player');
-                  },
-                );
-              },
-            );
-          } else {
-            return const Center(child: Text('No favorites added'));
-          }
-        },
+                    trailing: IconButton(
+                      icon: const Icon(Icons.favorite,color: Colors.white,),
+                      onPressed: () {
+                        BlocProvider.of<FavouriteSongsBloc>(context).add(RemoveFavouriteSong(song));
+                      },
+                    ),
+                  );
+                },
+              );
+            } else {
+              return const Center(child: Text("No favourite songs yet"));
+            }
+          },
+        ),
       ),
     );
   }
